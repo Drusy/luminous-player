@@ -1,6 +1,7 @@
 import mp3play
 
-from PyQt4.QtCore import QThread, pyqtSignal
+from PyQt4.QtCore import QThread, pyqtSignal, QFile
+from fr.luminous.utils.config import Config
 from gmusicapi import Webclient
 from gmusicapi import Mobileclient
 from gmusicapi.utils import utils
@@ -9,8 +10,10 @@ class GMusic(QThread):
     login = ''
     password = ''
     thread_starter = 'connect'
+    thread_args = ''
     web_client = Webclient()
     mobile_client = Mobileclient()
+    current_clip = None
     
     # Signals 
     connected_signal = pyqtSignal(bool)
@@ -51,34 +54,55 @@ class GMusic(QThread):
     def get_all_songs(self, incremental=False, include_deleted=False):
         return self.mobile_client.get_all_songs(incremental, include_deleted)
     
-    def search_all_access(self, query, max_results):
+    def search_all_access(self, query, max_results = 100):
         return self.mobile_client.search_all_access(query, max_results)
     
     def play_song(self, filename):
-        clip = mp3play.load(filename)
-        clip.play()
+        if self.current_clip != None:
+            self.current_clip.stop()
+        
+        self.current_clip = mp3play.load(filename)
+        self.current_clip.play()
+        
+        print("Playing song %s (%d secs)" % (filename, self.current_clip.seconds()))
         
     def download_song(self, song_id, filename):
-        mp3_data = self.get_stream_audio(song_id)
+        file = QFile(filename)
         
-        with open(filename, 'wb') as music_file:
-            music_file.write(mp3_data)
+        if file.exists():
+            print("Song already %s exists in cache" % (song_id))
+        else:
+            print("Downloading song %s to %s " % (song_id, filename))
             
+            mp3_data = self.get_stream_audio(str(song_id))
+            with open(filename, 'wb') as music_file:
+                music_file.write(mp3_data)
+
     def download_and_play_song(self, song_id, filename):
-        self.download_song(song_id, filename)
-        self.play_song(filename)
+        file_path = "%s/%s" % (Config.get_storage_folder(), filename)
+        self.download_song(song_id, file_path)
+        self.play_song(file_path)
         
     def run(self):
         if self.thread_starter == 'connect':
             connected = self.do_login(self.login, self.password)
             self.connected_signal.emit(connected)
+            
         if self.thread_starter == 'disconnect':
             self.do_logout()
+            
         if self.thread_starter == 'all_songs':
             all_songs = self.get_all_songs()
             self.all_song_signal.emit(all_songs)
+            
+        if self.thread_starter == 'search':
+            self.search_all_access(self.thread_args)
+            
+        if self.thread_starter == 'down_play':
+            self.download_and_play_song(self.thread_args, "%s.mp3" % self.thread_args)
     
-    def start_in_thread(self, starter_value):
+    def start_in_thread(self, starter_value, args = ''):
+        self.thread_args = args
         self.thread_starter = starter_value
         self.start()
         
