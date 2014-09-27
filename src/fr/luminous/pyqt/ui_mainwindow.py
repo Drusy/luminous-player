@@ -121,8 +121,8 @@ class Ui_MainWindow(object):
         self.verticalLayout_3 = QtGui.QVBoxLayout()
         self.verticalLayout_3.setSpacing(0)
         self.verticalLayout_3.setObjectName(_fromUtf8("verticalLayout_3"))
-        self.musicSeeker = phonon.Phonon.SeekSlider(self.centralwidget)
-        self.musicSeeker.setMaximumSize(QtCore.QSize(16777215, 15))
+        self.musicSeeker = QtGui.QSlider(self.centralwidget)
+        self.musicSeeker.setOrientation(QtCore.Qt.Horizontal)
         self.musicSeeker.setObjectName(_fromUtf8("musicSeeker"))
         self.verticalLayout_3.addWidget(self.musicSeeker)
         self.horizontalLayout_3 = QtGui.QHBoxLayout()
@@ -160,6 +160,8 @@ class Ui_MainWindow(object):
         spacerItem5 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.horizontalLayout_3.addItem(spacerItem5)
         self.soundSeeker = QtGui.QSlider(self.centralwidget)
+        self.soundSeeker.setMaximum(100)
+        self.soundSeeker.setProperty("value", 100)
         self.soundSeeker.setOrientation(QtCore.Qt.Horizontal)
         self.soundSeeker.setObjectName(_fromUtf8("soundSeeker"))
         self.horizontalLayout_3.addWidget(self.soundSeeker)
@@ -212,5 +214,3 @@ class Ui_MainWindow(object):
         self.randomButton.setText(_translate("MainWindow", "Random", None))
         self.pushButton_3.setText(_translate("MainWindow", "Rating Up", None))
         self.pushButton_4.setText(_translate("MainWindow", "Rating Down", None))
-
-from PyQt4 import phonon

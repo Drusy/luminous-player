@@ -1,5 +1,3 @@
-import mp3play
-
 from PyQt4.QtCore import QThread, pyqtSignal, QFile
 from fr.luminous.utils.config import Config
 from gmusicapi import Webclient
@@ -13,11 +11,11 @@ class GMusic(QThread):
     thread_args = ''
     web_client = Webclient()
     mobile_client = Mobileclient()
-    current_clip = None
     
     # Signals 
     connected_signal = pyqtSignal(bool)
     all_song_signal = pyqtSignal(list)
+    play_song_signal = pyqtSignal(str)
 
     def __init__(self, login, password):
         super(GMusic, self).__init__()
@@ -56,20 +54,11 @@ class GMusic(QThread):
     
     def search_all_access(self, query, max_results = 100):
         return self.mobile_client.search_all_access(query, max_results)
-    
-    def play_song(self, filename):
-        if self.current_clip != None:
-            self.current_clip.stop()
-        
-        self.current_clip = mp3play.load(filename)
-        self.current_clip.play()
-        
-        print("Playing song %s (%d secs)" % (filename, self.current_clip.seconds()))
         
     def download_song(self, song_id, filename):
-        file = QFile(filename)
+        mp3_file = QFile(filename)
         
-        if file.exists():
+        if mp3_file.exists():
             print("Song already %s exists in cache" % (song_id))
         else:
             print("Downloading song %s to %s " % (song_id, filename))
@@ -81,7 +70,14 @@ class GMusic(QThread):
     def download_and_play_song(self, song_id, filename):
         file_path = "%s/%s" % (Config.get_storage_folder(), filename)
         self.download_song(song_id, file_path)
-        self.play_song(file_path)
+        self.play_song_signal.emit(file_path)
+        
+    def on_volume_changed(self, volume):
+        self.volume = volume
+        if self.current_clip != None:
+            self.current_clip.stop()
+            self.current_clip.volume(volume)
+            self.current_clip.play()
         
     def run(self):
         if self.thread_starter == 'connect':
