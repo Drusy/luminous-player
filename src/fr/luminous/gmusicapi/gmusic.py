@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from PyQt4.QtCore import QThread, pyqtSignal, QFile
 from fr.luminous.utils.config import Config
 from gmusicapi import Webclient
@@ -15,7 +17,8 @@ class GMusic(QThread):
     # Signals 
     connected_signal = pyqtSignal(bool)
     all_song_signal = pyqtSignal(list)
-    play_song_signal = pyqtSignal(str)
+    play_song_signal = pyqtSignal(str, str)
+    search_result_signal = pyqtSignal(dict)
 
     def __init__(self, login, password):
         super(GMusic, self).__init__()
@@ -53,7 +56,7 @@ class GMusic(QThread):
         return self.mobile_client.get_all_songs(incremental, include_deleted)
     
     def search_all_access(self, query, max_results = 100):
-        return self.mobile_client.search_all_access(query, max_results)
+        return self.mobile_client.search_all_access(unicode(query), max_results)
         
     def download_song(self, song_id, filename):
         mp3_file = QFile(filename)
@@ -68,9 +71,9 @@ class GMusic(QThread):
                 music_file.write(mp3_data)
 
     def download_and_play_song(self, song_id, filename):
-        file_path = "%s/%s" % (Config.get_storage_folder(), filename)
+        file_path = "%s/%s" % (Config.get_music_storage_folder(), filename)
         self.download_song(song_id, file_path)
-        self.play_song_signal.emit(file_path)
+        self.play_song_signal.emit(file_path, song_id)
         
     def on_volume_changed(self, volume):
         self.volume = volume
@@ -92,7 +95,8 @@ class GMusic(QThread):
             self.all_song_signal.emit(all_songs)
             
         if self.thread_starter == 'search':
-            self.search_all_access(self.thread_args)
+            search_result = self.search_all_access(self.thread_args)
+            self.search_result_signal.emit(search_result)
             
         if self.thread_starter == 'down_play':
             self.download_and_play_song(self.thread_args, "%s.mp3" % self.thread_args)
